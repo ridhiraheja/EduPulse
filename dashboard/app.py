@@ -278,6 +278,51 @@ st.markdown(
         color: #ffffff !important;
     }}
 
+    /* Centered EduPulse AI modal */
+    [data-testid="stDialog"] > div {{
+        border-radius: 20px !important;
+        border: 1px solid rgba(168, 85, 247, 0.45) !important;
+        background: linear-gradient(145deg, #0b1224 0%, #111a32 100%) !important;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.65),
+                    0 0 45px rgba(139, 92, 246, 0.18) !important;
+    }}
+
+    [data-testid="stDialog"] textarea {{
+        border: 1px solid rgba(139, 92, 246, 0.75) !important;
+        border-radius: 14px !important;
+        background: rgba(18, 32, 61, 0.95) !important;
+        color: #f8fafc !important;
+        min-height: 105px !important;
+    }}
+
+    [data-testid="stDialog"] textarea:focus {{
+        border-color: #a855f7 !important;
+        box-shadow: 0 0 0 1px #a855f7,
+                    0 0 18px rgba(168, 85, 247, 0.25) !important;
+    }}
+
+    [data-testid="stDialog"] .stButton > button {{
+        border-radius: 11px !important;
+        min-height: 42px !important;
+        background: rgba(255, 255, 255, 0.035) !important;
+        border: 1px solid rgba(148, 163, 184, 0.18) !important;
+        color: #e2e8f0 !important;
+    }}
+
+    [data-testid="stDialog"] .stButton > button:hover {{
+        border-color: rgba(168, 85, 247, 0.65) !important;
+        background: rgba(168, 85, 247, 0.10) !important;
+        color: #ffffff !important;
+    }}
+
+    .ai-modal-send button {{
+        background: linear-gradient(135deg, #8b5cf6, #ec4899) !important;
+        border: none !important;
+        color: white !important;
+        font-weight: 700 !important;
+        box-shadow: 0 5px 20px rgba(139, 92, 246, 0.35) !important;
+    }}
+
     /* Hero Containers */
     .hero-card-container {{
         background: {hero_grad};
@@ -606,7 +651,7 @@ with top_h2:
             f"""
             <div class="top-pill-btn">
                 <span>📅</span>
-                <span style="font-weight: 600; color: {text_primary};">Sep 16, 2026</span>
+                <span style="font-weight: 600; color: {text_primary};">{datetime.now().strftime("%b %d, %Y")}</span>
                 <span style="font-size: 9px; color: {text_muted};">▼</span>
             </div>
             """,
@@ -990,11 +1035,11 @@ for idx, tab_name in enumerate(tabs_list):
 # ============================================================
 
 if not st.session_state["show_ai_agent"] and st.session_state["nav_page"] == "🏠 Home":
-    
-    # ── MIDDLE ROW: Attendance Line Chart, Academic Grouped Bar, Risk Donut, Quick Actions ──
+
+    # ── MIDDLE ROW: REAL DATA CHARTS + QUICK ACTIONS ──
     m_col1, m_col2, m_col3, m_col4 = st.columns([1.5, 1.15, 0.95, 0.9])
 
-    # Card 1: Attendance Trend
+    # Card 1: Attendance Trend — calculated from cleaned attendance records
     with m_col1:
         st.markdown(
             f"""
@@ -1002,72 +1047,93 @@ if not st.session_state["show_ai_agent"] and st.session_state["nav_page"] == "�
                 <div class="exact-panel-head">
                     <div>
                         <div class="exact-panel-title">📈 Attendance Trend</div>
-                        <div class="exact-panel-sub">Average attendance rate across schools over time</div>
-                    </div>
-                    <div style="font-size:11px; background:{app_bg}; border:1px solid {card_border}; padding:3px 8px; border-radius:6px; color:{text_secondary};">
-                        Last 6 Months ▼
+                        <div class="exact-panel-sub">Monthly average attendance from cleaned attendance records</div>
                     </div>
                 </div>
             """,
             unsafe_allow_html=True
         )
 
-        months = ["Jan 2026", "Feb 2026", "Mar 2026", "Apr 2026", "May 2026", "Jun 2026"]
-        rates = [78.5, 79.2, 82.4, 81.1, 81.6, 83.2]
-
-        fig_trend = go.Figure()
-        fig_trend.add_trace(go.Scatter(
-            x=months, y=rates,
-            mode="lines+markers",
-            name="Attendance",
-            line=dict(color="#38bdf8", width=3, shape="spline"),
-            marker=dict(size=7, color="#38bdf8", line=dict(width=1.5, color="#ffffff")),
-            fill="tozeroy",
-            fillcolor="rgba(56, 189, 248, 0.12)"
-        ))
-        fig_trend.update_layout(
-            make_layout(
-                height=250,
-                yaxis=dict(range=[0, 100], tickvals=[0, 20, 40, 60, 80, 100], ticktext=["0%", "20%", "40%", "60%", "80%", "100%"]),
-                showlegend=False
+        scope_ids = set(filtered_df["school_id"])
+        trend_df = df_att[df_att["school_id"].isin(scope_ids)].dropna(
+            subset=["date", "attendance_rate"]
+        ).copy()
+        if len(trend_df):
+            trend_df["month"] = trend_df["date"].dt.to_period("M").dt.to_timestamp()
+            trend_df = (
+                trend_df.groupby("month", as_index=False)["attendance_rate"]
+                .mean()
+                .sort_values("month")
+                .tail(6)
             )
-        )
-        st.plotly_chart(fig_trend, use_container_width=True)
+            fig_trend = px.line(
+                trend_df,
+                x="month",
+                y="attendance_rate",
+                markers=True,
+                labels={"month": "", "attendance_rate": "Attendance Rate (%)"}
+            )
+            fig_trend.update_traces(line=dict(color="#38bdf8", width=3), marker=dict(size=7))
+            fig_trend.update_layout(
+                make_layout(
+                    height=250,
+                    yaxis=dict(range=[0, 100], tickvals=[0, 20, 40, 60, 80, 100],
+                               ticktext=["0%", "20%", "40%", "60%", "80%", "100%"]),
+                    showlegend=False,
+                    hovermode="x unified"
+                )
+            )
+            fig_trend.update_xaxes(tickformat="%b %Y")
+            st.plotly_chart(fig_trend, use_container_width=True)
+        else:
+            st.info("No valid attendance dates available for the trend.")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # Card 2: Academic Performance
+    # Card 2: Academic Performance — real converted scores
     with m_col2:
         st.markdown(
             """
             <div class="exact-panel">
                 <div class="exact-panel-head">
                     <div>
-                        <div class="exact-panel-title">📈 Academic Performance</div>
-                        <div class="exact-panel-sub">Average test scores (by subject)</div>
+                        <div class="exact-panel-title">📚 Academic Performance</div>
+                        <div class="exact-panel-sub">Average converted test score by subject</div>
                     </div>
                 </div>
             """,
             unsafe_allow_html=True
         )
 
-        subjects = ["Math", "Science", "English", "Social Science"]
-        fig_acad = go.Figure()
-        fig_acad.add_trace(go.Bar(name="Grade 3-5", x=subjects, y=[70.2, 75.4, 65.8, 76.2], marker_color="#38bdf8"))
-        fig_acad.add_trace(go.Bar(name="Grade 6-8", x=subjects, y=[70.8, 73.1, 68.4, 78.5], marker_color="#3b82f6"))
-        fig_acad.add_trace(go.Bar(name="Grade 9-10", x=subjects, y=[68.4, 68.2, 64.1, 75.1], marker_color="#0284c7"))
-
-        fig_acad.update_layout(
-            make_layout(
-                height=250,
-                barmode="group",
-                yaxis=dict(range=[0, 100], tickvals=[0, 25, 50, 75, 100]),
-                legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5)
-            )
+        scope_ids = set(filtered_df["school_id"])
+        acad_df = (
+            df_tests[df_tests["school_id"].isin(scope_ids)]
+            .dropna(subset=["subject", "score_percentage"])
+            .groupby("subject", as_index=False)["score_percentage"]
+            .mean()
+            .sort_values("score_percentage", ascending=False)
         )
-        st.plotly_chart(fig_acad, use_container_width=True)
+        if len(acad_df):
+            fig_acad = px.bar(
+                acad_df,
+                x="subject",
+                y="score_percentage",
+                text_auto=".1f",
+                labels={"subject": "", "score_percentage": "Average Score (%)"}
+            )
+            fig_acad.update_traces(marker_color="#38bdf8")
+            fig_acad.update_layout(
+                make_layout(
+                    height=250,
+                    yaxis=dict(range=[0, 100], tickvals=[0, 25, 50, 75, 100]),
+                    showlegend=False
+                )
+            )
+            st.plotly_chart(fig_acad, use_container_width=True)
+        else:
+            st.info("No converted test scores available.")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # Card 3: Risk Distribution
+    # Card 3: Risk Distribution — calculated from the actual risk index
     with m_col3:
         st.markdown(
             """
@@ -1075,36 +1141,54 @@ if not st.session_state["show_ai_agent"] and st.session_state["nav_page"] == "�
                 <div class="exact-panel-head">
                     <div>
                         <div class="exact-panel-title">🛡️ Risk Distribution</div>
-                        <div class="exact-panel-sub">Schools by risk category</div>
+                        <div class="exact-panel-sub">Schools by analytical risk band</div>
                     </div>
                 </div>
             """,
             unsafe_allow_html=True
         )
 
-        fig_donut = px.pie(
-            names=["High", "Moderate", "Low"],
-            values=[8.2, 54.3, 37.5],
-            hole=0.68,
-            color=["High", "Moderate", "Low"],
-            color_discrete_map={"High": "#f43f5e", "Moderate": "#fbbf24", "Low": "#10b981"}
-        )
-        fig_donut.update_traces(textinfo="none", hoverinfo="label+percent")
-        fig_donut.update_layout(
-            make_layout(
-                height=250,
-                annotations=[dict(
-                    text=f"<b style='font-size:20px;color:{text_primary};'>{len(filtered_df)}</b><br><span style='font-size:9.5px;color:{text_muted};'>Total Schools</span>",
-                    x=0.5, y=0.5, font_size=11, showarrow=False
-                )],
-                showlegend=True,
-                legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="right", x=1.1)
+        risk_vals = filtered_df["retention_risk_indicator"].dropna()
+        risk_counts = pd.Series({
+            "Low": int((risk_vals <= 20).sum()),
+            "Moderate": int(((risk_vals > 20) & (risk_vals <= 25)).sum()),
+            "High": int(((risk_vals > 25) & (risk_vals <= 30)).sum()),
+            "Critical": int((risk_vals > 30).sum())
+        })
+        risk_counts = risk_counts[risk_counts > 0]
+
+        if len(risk_counts):
+            fig_donut = px.pie(
+                names=risk_counts.index,
+                values=risk_counts.values,
+                hole=0.68,
+                color=risk_counts.index,
+                color_discrete_map={
+                    "Low": "#10b981",
+                    "Moderate": "#fbbf24",
+                    "High": "#fb7185",
+                    "Critical": "#f43f5e"
+                }
             )
-        )
-        st.plotly_chart(fig_donut, use_container_width=True)
+            fig_donut.update_traces(textinfo="none", hoverinfo="label+value+percent")
+            fig_donut.update_layout(
+                make_layout(
+                    height=250,
+                    annotations=[dict(
+                        text=f"<b style='font-size:20px;color:{text_primary};'>{len(filtered_df)}</b>"
+                             f"<br><span style='font-size:9.5px;color:{text_muted};'>Total Schools</span>",
+                        x=0.5, y=0.5, font_size=11, showarrow=False
+                    )],
+                    showlegend=True,
+                    legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="right", x=1.1)
+                )
+            )
+            st.plotly_chart(fig_donut, use_container_width=True)
+        else:
+            st.info("No risk values available.")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # Card 4: Quick Actions (NOW 100% FUNCTIONAL INTERACTIVE STREAMLIT BUTTONS)
+    # Card 4: Quick Actions
     with m_col4:
         st.markdown(
             """
@@ -1167,11 +1251,10 @@ if not st.session_state["show_ai_agent"] and st.session_state["nav_page"] == "�
 
         st.markdown("</div></div>", unsafe_allow_html=True)
 
-    # ── BOTTOM ROW: District-wise Comparison & Recent Alerts ──
+    # ── BOTTOM ROW: REAL DISTRICT COMPARISON & DYNAMIC ALERTS ──
     st.markdown("<div style='margin-top: 14px;'></div>", unsafe_allow_html=True)
     b_col1, b_col2 = st.columns([1.32, 1.0])
 
-    # Bottom Left: District-wise Comparison
     with b_col1:
         st.markdown(
             """
@@ -1179,167 +1262,446 @@ if not st.session_state["show_ai_agent"] and st.session_state["nav_page"] == "�
                 <div class="exact-panel-head">
                     <div>
                         <div class="exact-panel-title">📍 District-wise Comparison</div>
-                        <div class="exact-panel-sub">Average test scores across districts</div>
+                        <div class="exact-panel-sub">Average test scores across districts in current scope</div>
                     </div>
                 </div>
             """,
             unsafe_allow_html=True
         )
 
-        dist_names = ["Bathinda", "Jalandhar", "Patiala", "Ludhiana", "Amritsar"]
-        dist_scores = [60.7, 65.1, 68.3, 74.6, 78.2]
-
-        fig_dist = go.Figure()
-        fig_dist.add_trace(go.Bar(
-            x=dist_scores,
-            y=dist_names,
-            orientation="h",
-            text=[f"{s:.1f}" for s in dist_scores],
-            textposition="outside",
-            marker=dict(
-                color=dist_scores,
-                colorscale=[
-                    [0.0, "#8b5cf6"],
-                    [0.35, "#6366f1"],
-                    [0.65, "#3b82f6"],
-                    [1.0, "#38bdf8"]
-                ],
-                line=dict(width=0)
-            )
-        ))
-        fig_dist.update_layout(
-            make_layout(
-                height=200,
-                xaxis=dict(range=[0, 92]),
-                yaxis=dict(autorange=True),
-                showlegend=False
-            )
+        dist_summary = (
+            filtered_df.groupby("district", dropna=False)
+            .agg(avg_score=("average_test_score", "mean"))
+            .reset_index()
+            .dropna(subset=["avg_score"])
+            .sort_values("avg_score", ascending=False)
         )
-        st.plotly_chart(fig_dist, use_container_width=True)
+        if len(dist_summary):
+            dist_plot = dist_summary.head(10).sort_values("avg_score", ascending=True)
+            fig_dist = px.bar(
+                dist_plot,
+                x="avg_score",
+                y="district",
+                orientation="h",
+                text_auto=".1f",
+                labels={"avg_score": "Average Test Score (%)", "district": ""}
+            )
+            fig_dist.update_traces(marker_color="#38bdf8")
+            fig_dist.update_layout(make_layout(height=220, xaxis=dict(range=[0, 100]), showlegend=False))
+            st.plotly_chart(fig_dist, use_container_width=True)
+        else:
+            st.info("No district-level test-score data available.")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # Bottom Right: Recent Alerts
     with b_col2:
         st.markdown(
             f"""
             <div class="exact-panel">
                 <div class="exact-panel-head">
-                    <div class="exact-panel-title">🔔 Recent Alerts</div>
-                    <a href="#" style="font-size:11px; color:#38bdf8; text-decoration:none;">View All</a>
+                    <div class="exact-panel-title">🔔 Current Alerts</div>
                 </div>
-                <div class="recent-alert-row">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="color:#f43f5e; font-size:12px;">🔴</span>
-                        <span style="font-size:12px; color:{text_primary}; font-weight:600;">High Risk Schools Detected</span>
-                    </div>
-                    <div style="font-size:11px; color:{text_secondary};">12 schools &nbsp;&nbsp;<span style="color:{text_muted};">2h ago</span></div>
-                </div>
-                <div class="recent-alert-row">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="color:#fb923c; font-size:12px;">🟠</span>
-                        <span style="font-size:12px; color:{text_primary}; font-weight:600;">Low Attendance Alert</span>
-                    </div>
-                    <div style="font-size:11px; color:{text_secondary};">48 schools &nbsp;&nbsp;<span style="color:{text_muted};">4h ago</span></div>
-                </div>
-                <div class="recent-alert-row">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="color:#fbbf24; font-size:12px;">🟡</span>
-                        <span style="font-size:12px; color:{text_primary}; font-weight:600;">Infrastructure Issues</span>
-                    </div>
-                    <div style="font-size:11px; color:{text_secondary};">23 schools &nbsp;&nbsp;<span style="color:{text_muted};">6h ago</span></div>
-                </div>
-                <div class="recent-alert-row">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="color:#38bdf8; font-size:12px;">🔵</span>
-                        <span style="font-size:12px; color:{text_primary}; font-weight:600;">Test Score Decline</span>
-                    </div>
-                    <div style="font-size:11px; color:{text_secondary};">17 schools &nbsp;&nbsp;<span style="color:{text_muted};">8h ago</span></div>
-                </div>
-            </div>
             """,
             unsafe_allow_html=True
         )
 
+        alert_items = [
+            ("🔴", "Critical-risk schools", int((filtered_df["retention_risk_indicator"] > 30).sum())),
+            ("🟠", "Low attendance alert", int((filtered_df["average_attendance_rate"] < 75).sum())),
+            ("🟡", "Infrastructure alert", int((filtered_df["average_facility_count"] < 2).sum())),
+            ("🔵", "High proxy-attendance alert", int((filtered_df["proxy_attendance_rate"] > 5).sum()))
+        ]
+
+        for icon, label, count in alert_items:
+            st.markdown(
+                f"""
+                <div class="recent-alert-row">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:12px;">{icon}</span>
+                        <span style="font-size:12px; color:{text_primary}; font-weight:600;">{label}</span>
+                    </div>
+                    <div style="font-size:11px; color:{text_secondary};">{count:,} schools</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        st.markdown("</div>", unsafe_allow_html=True)
+
 # ============================================================
-# 12. AI AGENT WORKSPACE (PRESERVED & COMPLETE)
+# 12. AI AGENT WORKSPACE — DETERMINISTIC, REPRODUCIBLE QUERY ENGINE
 # ============================================================
 
 def detect_intent(query_text):
-    q = query_text.lower()
-    if any(w in q for w in ["infrastructure", "facility", "facilities", "toilet", "water", "electricity"]):
-        if any(w in q for w in ["compare", "vs", "versus", "difference", "with", "without"]): return "COMPARISON"
+    q = str(query_text).lower().strip()
+
+    # Specific patterns first so "electricity vs score" is comparison, not infra ranking.
+    if any(w in q for w in ["compare", "vs", "versus", "difference", "with and without"]):
+        return "COMPARISON"
+    if any(w in q for w in ["trend", "over time", "monthly", "daily", "timeline"]):
+        return "TREND"
+    if any(w in q for w in ["correlation", "correlated", "relationship", "associated", "association"]):
+        return "CORRELATION"
+    if any(w in q for w in ["anomaly", "anomalies", "flag", "proxy attendance"]):
+        return "ANOMALY"
+    if any(w in q for w in ["mdm", "meal", "procurement", "payment", "paid", "pending", "due", "grain"]):
+        return "MDM"
+    if any(w in q for w in ["subject", "subjects", "marks", "test score", "test scores", "grade"]):
+        return "BREAKDOWN"
+    if any(w in q for w in ["infrastructure", "facility", "facilities", "toilet", "water", "electricity", "playground", "boundary wall"]):
         return "INFRA_RANKING"
-    if any(w in q for w in ["trend", "over time", "monthly", "daily", "timeline", "date"]): return "TREND"
-    if any(w in q for w in ["correlation", "correlated", "related", "relationship"]): return "CORRELATION"
-    if any(w in q for w in ["anomaly", "flag", "proxy"]): return "ANOMALY"
-    if any(w in q for w in ["mdm", "meal", "payment", "paid"]): return "MDM"
-    if any(w in q for w in ["subject", "marks", "test score", "grade"]): return "BREAKDOWN"
     return "RANKING"
 
-if st.session_state["show_ai_agent"]:
+
+def render_ai_result(query_text, intent, data):
+    q = str(query_text).lower()
+
+    if intent == "COMPARISON":
+        # Track 4 bonus: average test score with vs without functional electricity.
+        if "electric" in q:
+            yes = data[data["electricity_available"] >= 100]["average_test_score"].mean()
+            no = data[data["electricity_available"] < 100]["average_test_score"].mean()
+            n_yes = int((data["electricity_available"] >= 100).sum())
+            n_no = int((data["electricity_available"] < 100).sum())
+
+            cmp_df = pd.DataFrame({
+                "Group": ["With functional electricity", "Without functional electricity"],
+                "Average Test Score (%)": [yes, no],
+                "Schools": [n_yes, n_no]
+            })
+            fig = px.bar(
+                cmp_df,
+                x="Group",
+                y="Average Test Score (%)",
+                text="Average Test Score (%)",
+                labels={"Group": "", "Average Test Score (%)": "Average Test Score (%)"}
+            )
+            fig.update_traces(texttemplate="%{text:.2f}", textposition="outside", marker_color="#38bdf8")
+            fig.update_layout(make_layout(height=320, yaxis=dict(range=[0, 100]), showlegend=False))
+            st.plotly_chart(fig, use_container_width=True)
+
+            diff = yes - no if pd.notna(yes) and pd.notna(no) else np.nan
+            if pd.notna(diff):
+                st.info(
+                    f"Association in the current scope: schools with functional electricity have "
+                    f"{yes:.2f}% average test scores versus {no:.2f}% without electricity "
+                    f"(difference {diff:+.2f} percentage points). This is observational and does not establish causation."
+                )
+            return
+
+        # Generic comparison fallback: district attendance vs score.
+        comp = data.groupby("district", dropna=False).agg(
+            Attendance=("average_attendance_rate", "mean"),
+            Score=("average_test_score", "mean")
+        ).reset_index()
+        comp = comp.dropna(subset=["Attendance", "Score"])
+        if len(comp):
+            long_comp = comp.melt(id_vars="district", value_vars=["Attendance", "Score"],
+                                  var_name="Metric", value_name="Value")
+            fig = px.bar(long_comp, x="district", y="Value", color="Metric", barmode="group")
+            fig.update_layout(make_layout(height=320, yaxis=dict(range=[0, 100])))
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Not enough data for the requested comparison.")
+
+    elif intent == "TREND":
+        trend = df_att[df_att["school_id"].isin(set(data["school_id"]))].dropna(
+            subset=["date", "attendance_rate"]
+        ).copy()
+        if len(trend):
+            trend["month"] = trend["date"].dt.to_period("M").dt.to_timestamp()
+            trend = trend.groupby("month", as_index=False)["attendance_rate"].mean().sort_values("month")
+            fig = px.line(trend, x="month", y="attendance_rate", markers=True,
+                          labels={"month": "", "attendance_rate": "Average Attendance (%)"})
+            fig.update_traces(line=dict(color="#38bdf8", width=3), marker=dict(size=7))
+            fig.update_layout(make_layout(height=340, yaxis=dict(range=[0, 100]), showlegend=False))
+            fig.update_xaxes(tickformat="%b %Y")
+            st.plotly_chart(fig, use_container_width=True)
+            st.success("Trend shown as a line chart because the query asks how attendance changes over time.")
+        else:
+            st.info("No valid attendance dates are available.")
+
+    elif intent == "CORRELATION":
+        corr = data[["average_attendance_rate", "average_test_score"]].dropna()
+        if len(corr) >= 3:
+            r = corr["average_attendance_rate"].corr(corr["average_test_score"])
+            fig = px.scatter(
+                corr,
+                x="average_attendance_rate",
+                y="average_test_score",
+                trendline="ols",
+                labels={
+                    "average_attendance_rate": "Average Attendance Rate (%)",
+                    "average_test_score": "Average Test Score (%)"
+                }
+            )
+            fig.update_layout(make_layout(height=340))
+            st.plotly_chart(fig, use_container_width=True)
+            st.info(
+                f"Pearson correlation in the current school scope: r = {r:.3f}. "
+                "This measures linear association, not causation."
+            )
+        else:
+            st.info("At least three schools with both attendance and score values are needed.")
+
+    elif intent == "ANOMALY":
+        anomaly = data[data["proxy_attendance_rate"] > 5].copy()
+        anomaly = anomaly.sort_values("proxy_attendance_rate", ascending=False)
+        if len(anomaly):
+            st.dataframe(
+                anomaly[[
+                    "school_id", "school_name", "district",
+                    "proxy_attendance_rate", "average_attendance_rate",
+                    "proxy_attendance_records"
+                ]].head(30),
+                use_container_width=True,
+                hide_index=True
+            )
+            st.warning(f"{len(anomaly):,} schools exceed the configured proxy-attendance alert threshold of 5%.")
+        else:
+            st.success("No schools exceed the configured proxy-attendance alert threshold of 5%.")
+
+    elif intent == "MDM":
+        mdm_status = pd.DataFrame({
+            "Payment Status": ["Paid", "Pending", "Due"],
+            "Records": [
+                int(data["paid_records"].sum()),
+                int(data["pending_records"].sum()),
+                int(data["due_records"].sum())
+            ]
+        })
+        fig = px.bar(mdm_status, x="Payment Status", y="Records", text_auto=True,
+                     labels={"Payment Status": "", "Records": "Procurement Records"})
+        fig.update_traces(marker_color="#fbbf24")
+        fig.update_layout(make_layout(height=320, showlegend=False))
+        st.plotly_chart(fig, use_container_width=True)
+        st.info(
+            f"Recorded grain quantity in current scope: {data['total_grain_quantity_kg'].sum():,.2f} kg. "
+            f"Recorded MDM cost: ₹{data['total_mdm_cost'].sum():,.0f}. "
+            "Missing quantity/unit fields are retained and flagged rather than imputed."
+        )
+
+    elif intent == "BREAKDOWN":
+        score_data = df_tests.dropna(subset=["subject", "score_percentage"]).copy()
+        school_ids = set(data["school_id"])
+        score_data = score_data[score_data["school_id"].isin(school_ids)]
+        subj = score_data.groupby("subject", as_index=False)["score_percentage"].mean().sort_values(
+            "score_percentage", ascending=False
+        )
+        if len(subj):
+            fig = px.bar(subj, x="subject", y="score_percentage", text_auto=".1f",
+                         labels={"subject": "", "score_percentage": "Average Score (%)"})
+            fig.update_traces(marker_color="#a855f7")
+            fig.update_layout(make_layout(height=330, yaxis=dict(range=[0, 100]), showlegend=False))
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No converted test-score records are available.")
+
+    elif intent == "INFRA_RANKING":
+        infra_map = {
+            "electricity": ("electricity_available", "Electricity"),
+            "water": ("drinking_water_available", "Drinking Water"),
+            "toilet": ("functional_toilet_available", "Functional Toilet"),
+            "playground": ("playground_available", "Playground"),
+            "boundary": ("boundary_wall_available", "Boundary Wall")
+        }
+        selected = None
+        for key, value in infra_map.items():
+            if key in q:
+                selected = value
+                break
+
+        if selected:
+            col, label = selected
+            known = data[col].dropna()
+            coverage = known.mean() if len(known) else np.nan
+            st.metric(f"{label} coverage among known school records", f"{coverage:.1f}%" if pd.notna(coverage) else "N/A")
+        else:
+            infra = pd.DataFrame({
+                "Facility": ["Electricity", "Drinking Water", "Functional Toilet", "Boundary Wall", "Playground"],
+                "Coverage (%)": [
+                    data["electricity_available"].mean(),
+                    data["drinking_water_available"].mean(),
+                    data["functional_toilet_available"].mean(),
+                    data["boundary_wall_available"].mean(),
+                    data["playground_available"].mean()
+                ]
+            }).sort_values("Coverage (%)")
+            fig = px.bar(infra, x="Coverage (%)", y="Facility", orientation="h", text_auto=".1f",
+                         labels={"Coverage (%)": "Coverage (%)", "Facility": ""})
+            fig.update_traces(marker_color="#38bdf8")
+            fig.update_layout(make_layout(height=340, xaxis=dict(range=[0, 100]), showlegend=False))
+            st.plotly_chart(fig, use_container_width=True)
+
+    else:  # RANKING
+        ranking = data.groupby("district", dropna=False)["retention_risk_indicator"].mean().reset_index()
+        ranking = ranking.dropna(subset=["retention_risk_indicator"]).sort_values(
+            "retention_risk_indicator", ascending=False
+        )
+        if len(ranking):
+            fig = px.bar(
+                ranking,
+                x="retention_risk_indicator",
+                y="district",
+                orientation="h",
+                text_auto=".2f",
+                labels={"retention_risk_indicator": "Average Retention Risk Indicator", "district": ""}
+            )
+            fig.update_traces(marker_color="#f43f5e")
+            fig.update_layout(make_layout(height=340, showlegend=False))
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No district risk data is available.")
+
+
+@st.dialog("✦ Ask EduPulse AI", width="large")
+def show_ai_modal():
+    """Centered AI workspace shown over the current dashboard."""
     st.markdown(
-        f"""
-        <div class="exact-panel" style="border: 1px solid rgba(168, 85, 247, 0.4); margin-top: 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="font-size: 18px; font-weight: 800; color: {text_primary}; display: flex; align-items: center; gap: 8px;">
-                    <span style="background: linear-gradient(135deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">✦ Ask EduPulse AI Workspace</span>
-                    <span style="font-size: 10px; background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.4); padding: 2px 8px; border-radius: 9999px; color: #e9d5ff;">Query Engine</span>
-                </div>
-            </div>
-            <div style="font-size: 12px; color: {text_secondary}; margin-top: 4px;">
-                Ask analytical queries across attendance, test scores, infrastructure coverage, mid-day meals, and composite retention risk.
+        """
+        <div style="text-align:center; margin-top:-8px; margin-bottom:16px;">
+            <div style="
+                font-size:12px;
+                color:#94a3b8;
+                line-height:1.6;
+                max-width:560px;
+                margin:0 auto;
+            ">
+                Ask questions about your education data, get insights,
+                see visualizations, and explore data-driven decisions.
             </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    col_back, _ = st.columns([1.2, 4])
-    with col_back:
-        if st.button("← Back to Dashboard", use_container_width=True):
-            st.session_state["show_ai_agent"] = False
-            st.rerun()
+    # If a prompt chip was clicked last run, pre-fill via value= (not key=) and
+    # store the result in a plain session-state key so we can read it later.
+    _pending = st.session_state.pop("ai_modal_text_pending", None)
+    _default = _pending if _pending is not None else st.session_state.get("ai_modal_text", "")
+    ai_q = st.text_area(
+        "Ask anything",
+        value=_default,
+        placeholder=(
+            "Ask anything... e.g. Show attendance trend, "
+            "compare electricity and test scores, rank districts by risk..."
+        ),
+        height=105,
+        label_visibility="collapsed",
+        key="ai_modal_text"
+    )
+
+    send_col, close_col = st.columns([4, 1])
+
+    with send_col:
+        st.markdown('<div class="ai-modal-send">', unsafe_allow_html=True)
+        send_clicked = st.button(
+            "✦  Analyze with EduPulse AI",
+            key="ai_modal_send",
+            use_container_width=True
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with close_col:
+        close_clicked = st.button(
+            "✕ Close",
+            key="ai_modal_close",
+            use_container_width=True
+        )
+
+    if close_clicked:
+        st.session_state["show_ai_agent"] = False
+        st.rerun()
+
+    st.markdown(
+        """
+        <div style="
+            font-size:12px;
+            font-weight:700;
+            color:#cbd5e1;
+            margin:16px 0 8px;
+        ">
+            Try these examples
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     sample_prompts = [
-        "Compare test scores for schools with and without electricity",
-        "Which districts have the highest retention risk?",
         "Show attendance trend over time",
-        "Which schools have high proxy attendance?",
+        "Show MDM payment status",
+        "Compare electricity and test scores",
+        "Show test scores by subject",
         "Is attendance associated with academic performance?",
-        "Which district has the lowest infrastructure availability?"
+        "Show infrastructure availability",
+        "Show schools with proxy attendance above 5%",
+        "Rank districts by retention risk",
     ]
-    p_cols = st.columns(3)
+
+    p_cols = st.columns(2)
     for idx, prompt_text in enumerate(sample_prompts):
-        with p_cols[idx % 3]:
-            if st.button(f"💡 {prompt_text}", key=f"ai_p_{idx}", use_container_width=True):
-                st.session_state["ai_input_text"] = prompt_text
+        with p_cols[idx % 2]:
+            if st.button(
+                prompt_text,
+                key=f"ai_modal_prompt_{idx}",
+                use_container_width=True
+            ):
+                st.session_state["ai_modal_text_pending"] = prompt_text
                 st.rerun()
 
-    ai_q = st.text_input("Enter natural language question:", value=st.session_state.get("ai_input_text", ""))
-    if ai_q:
-        intent = detect_intent(ai_q)
-        st.markdown(f"<div style='background:rgba(255,255,255,0.03); border:1px solid {card_border}; border-radius:10px; padding:10px 14px; margin:10px 0; font-size:12px; color:{text_primary};'>🎯 <strong>Resolved Intent:</strong> {intent} &nbsp;•&nbsp; ⚡ <strong>Scope:</strong> {len(filtered_df)} schools</div>", unsafe_allow_html=True)
-        
-        if intent == "COMPARISON":
-            e_yes = filtered_df[filtered_df["electricity_available"] >= 100]["average_test_score"].mean()
-            e_no = filtered_df[filtered_df["electricity_available"] < 100]["average_test_score"].mean()
-            fig_cmp = px.bar(pd.DataFrame({"Readiness": ["With Electricity", "Without Electricity"], "Average Test Score (%)": [e_yes, e_no]}),
-                             x="Readiness", y="Average Test Score (%)", color="Readiness", text_auto=".2f",
-                             color_discrete_map={"With Electricity": "#38bdf8", "Without Electricity": "#f43f5e"})
-            fig_cmp.update_layout(make_layout(height=260, showlegend=False))
-            st.plotly_chart(fig_cmp, use_container_width=True)
-        else:
-            dist_risk_agg = filtered_df.groupby("district")["retention_risk_indicator"].mean().reset_index().sort_values("retention_risk_indicator", ascending=False)
-            fig_r = px.bar(dist_risk_agg, x="retention_risk_indicator", y="district", orientation="h", text_auto=".2f",
-                           title="District Retention Risk Ranking", color="retention_risk_indicator", color_continuous_scale=["#10b981", "#fbbf24", "#f43f5e"])
-            fig_r.update_layout(make_layout(height=300, coloraxis_showscale=False))
-            st.plotly_chart(fig_r, use_container_width=True)
+    query = st.session_state.get("ai_modal_text", "").strip()
+
+    if send_clicked and query:
+        st.session_state["ai_input_text"] = query
+
+    if query:
+        intent = detect_intent(query)
+
+        st.markdown(
+            f"""
+            <div style="
+                margin-top:16px;
+                padding:10px 13px;
+                border-radius:10px;
+                border:1px solid rgba(168,85,247,.25);
+                background:rgba(168,85,247,.07);
+                font-size:12px;
+                color:#cbd5e1;
+            ">
+                🎯 <b style="color:#f8fafc;">Resolved Intent:</b> {intent}
+                &nbsp; • &nbsp;
+                ⚡ <b style="color:#f8fafc;">Scope:</b> {len(filtered_df):,} schools
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        render_ai_result(query, intent, filtered_df)
+
+    st.markdown(
+        """
+        <div style="
+            text-align:center;
+            margin-top:18px;
+            padding-top:10px;
+            border-top:1px solid rgba(148,163,184,.12);
+            font-size:10px;
+            color:#64748b;
+        ">
+            ✦ Powered by EduPulse AI &nbsp;|&nbsp; Data • Insights • Better Education
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# Open the modal when the header or Quick Action button is clicked.
+if st.session_state["show_ai_agent"]:
+    show_ai_modal()
 
 # ============================================================
 # 13. OTHER VIEWS (ANALYTICS, SCHOOLS, ETC.)
 # ============================================================
 
-elif not st.session_state["show_ai_agent"]:
+if True:
     
     # ── ANALYTICS VIEW ──
     if st.session_state["nav_page"] == "📊 Analytics":
@@ -1408,8 +1770,14 @@ elif not st.session_state["show_ai_agent"]:
     # ── MID-DAY MEAL VIEW ──
     elif st.session_state["nav_page"] == "🍱 Mid-Day Meal":
         st.markdown(f"<div style='font-size:20px; font-weight:800; color:{text_primary}; margin-top:14px;'>🍱 Mid-Day Meal Operations</div>", unsafe_allow_html=True)
-        mdm_sum = filtered_df.agg({"paid_records": "sum", "pending_records": "sum", "due_records": "sum"}).reset_index()
-        mdm_sum.columns = ["Status", "Count"]
+        mdm_sum = pd.DataFrame({
+            "Status": ["Paid", "Pending", "Due"],
+            "Count": [
+                int(filtered_df["paid_records"].sum()),
+                int(filtered_df["pending_records"].sum()),
+                int(filtered_df["due_records"].sum())
+            ]
+        })
         fig_m = px.pie(mdm_sum, names="Status", values="Count", hole=0.5, color_discrete_sequence=["#10b981", "#fbbf24", "#ef4444"])
         fig_m.update_layout(make_layout(height=300))
         st.plotly_chart(fig_m, use_container_width=True)
@@ -1436,25 +1804,132 @@ elif not st.session_state["show_ai_agent"]:
     # ── POLICY SIMULATOR VIEW ──
     elif st.session_state["nav_page"] == "🔮 Policy Simulator":
         st.markdown(f"<div style='font-size:20px; font-weight:800; color:{text_primary}; margin-top:14px;'>🔮 Policy Impact Simulator</div>", unsafe_allow_html=True)
-        p_c1, p_c2 = st.columns(2)
-        with p_c1: att_b = st.slider("Attendance Boost (+%)", 0.0, 15.0, 5.0)
-        with p_c2: sc_b = st.slider("Academic Remedial Support (+%)", 0.0, 15.0, 5.0)
+        st.markdown(
+            f"<div style='font-size:11px; color:{text_muted}; margin-bottom:12px;'>"
+            "Scenario planning only — projected values are hypothetical sensitivity scenarios, not causal forecasts."
+            "</div>",
+            unsafe_allow_html=True
+        )
+
+        p_c1, p_c2, p_c3, p_c4 = st.columns(4)
+        with p_c1:
+            att_b = st.slider("Attendance Boost (+pp)", 0.0, 15.0, step=0.5, key="sim_att_val")
+        with p_c2:
+            sc_b = st.slider("Academic Score Boost (+pp)", 0.0, 15.0, step=0.5, key="sim_score_val")
+        with p_c3:
+            infra_b = st.slider("Facility Improvement (+)", 0.0, 2.0, step=0.1, key="sim_infra_val")
+        with p_c4:
+            proxy_b = st.slider("Proxy Attendance Reduction (-pp)", 0.0, 10.0, step=0.5, key="sim_proxy_val")
+
         base_r = filtered_df["retention_risk_indicator"].mean()
-        proj_r = base_r - ((att_b + sc_b) * 0.4)
-        st.metric("Baseline Risk", f"{base_r:.2f}")
-        st.metric("Projected Risk", f"{proj_r:.2f}", delta=f"-{base_r - proj_r:.2f}")
+
+        baseline_components = {
+            "Attendance": filtered_df["attendance_risk"].mean(),
+            "Proxy": filtered_df["proxy_risk"].mean(),
+            "Academic": filtered_df["score_risk"].mean(),
+            "Infrastructure": filtered_df["infrastructure_risk"].mean()
+        }
+
+        projected_att_risk = max(0.0, baseline_components["Attendance"] - att_b)
+        projected_proxy_risk = max(0.0, baseline_components["Proxy"] - proxy_b)
+        projected_score_risk = max(0.0, baseline_components["Academic"] - sc_b)
+        projected_infra_risk = max(0.0, baseline_components["Infrastructure"] - (infra_b / 5.0 * 100.0))
+        projected_components = [
+            projected_att_risk, projected_proxy_risk,
+            projected_score_risk, projected_infra_risk
+        ]
+        proj_r = float(np.nanmean(projected_components))
+
+        r1, r2, r3 = st.columns(3)
+        r1.metric("Baseline Risk", f"{base_r:.2f}")
+        r2.metric("Scenario Risk", f"{proj_r:.2f}", delta=f"{proj_r - base_r:+.2f}")
+        r3.metric("Scenario Risk-Index Reduction", f"{max(0.0, base_r - proj_r):.2f}")
+
+        scenario_df = pd.DataFrame({
+            "Component": ["Attendance", "Proxy", "Academic", "Infrastructure"],
+            "Baseline": [
+                baseline_components["Attendance"],
+                baseline_components["Proxy"],
+                baseline_components["Academic"],
+                baseline_components["Infrastructure"]
+            ],
+            "Scenario": projected_components
+        }).melt(id_vars="Component", var_name="Scenario", value_name="Risk")
+        fig_sim = px.bar(scenario_df, x="Component", y="Risk", color="Scenario", barmode="group", text_auto=".1f")
+        fig_sim.update_layout(make_layout(height=330, yaxis=dict(range=[0, 100])))
+        st.plotly_chart(fig_sim, use_container_width=True)
 
     # ── DATA RESCUE & AUDIT VIEW ──
     elif st.session_state["nav_page"] == "🛡️ Data Rescue & Audit":
-        st.markdown(f"<div style='font-size:20px; font-weight:800; color:{text_primary}; margin-top:14px;'>🛡️ Data Rescue Engine & Quality Audit</div>", unsafe_allow_html=True)
-        st.markdown("""
-        ✔ **School Master:** 600 / 600 unique schools<br/>
-        ✔ **Attendance Records:** 100% matched (20,000 / 20,000)<br/>
-        ✔ **Test Scores:** 100% matched (8,000 / 8,000)<br/>
-        ✔ **MDM Procurement:** 100% matched (12,000 / 12,000)<br/>
-        ✔ **Infrastructure:** 100% matched (3,000 / 3,000)<br/>
-        ✔ **Unmapped IDs:** 0 unmapped across datasets
-        """, unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='font-size:20px; font-weight:800; color:{text_primary}; margin-top:14px;'>"
+            "🛡️ Data Rescue Engine & Quality Audit</div>",
+            unsafe_allow_html=True
+        )
+
+        audit_rows = pd.DataFrame({
+            "Dataset": ["School Master", "Attendance", "Test Scores", "MDM Procurement", "Infrastructure"],
+            "Raw Rows": [618, 20800, 8000, 12360, 3150],
+            "Cleaned Rows": [600, 20000, 8000, 12000, 3000],
+            "Exact Duplicates Removed": [18, 800, 0, 360, 150]
+        })
+        st.dataframe(audit_rows, use_container_width=True, hide_index=True)
+
+        st.markdown(
+            f"""
+            <div class="exact-panel" style="margin-top:12px;">
+                <div style="font-size:14px; font-weight:700; color:{text_primary}; margin-bottom:8px;">
+                    Relational Integrity
+                </div>
+                <div style="font-size:12px; color:{text_secondary}; line-height:1.65;">
+                    ✔ <strong>School Master:</strong> 600 unique schools<br/>
+                    ✔ <strong>Attendance:</strong> 20,000 rows; 600 unique School IDs; 0 unmapped IDs<br/>
+                    ✔ <strong>Test Scores:</strong> 8,000 rows; 600 unique School IDs; 0 unmapped IDs<br/>
+                    ✔ <strong>MDM Procurement:</strong> 12,000 rows; 600 unique School IDs; 0 unmapped IDs<br/>
+                    ✔ <strong>Infrastructure:</strong> 3,000 rows; 598 unique School IDs; 0 unmapped IDs<br/>
+                    ℹ <strong>Infrastructure coverage:</strong> 598 of 600 schools have infrastructure records.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            f"""
+            <div class="exact-panel" style="margin-top:12px;">
+                <div style="font-size:14px; font-weight:700; color:{text_primary}; margin-bottom:8px;">
+                    Key Cleaning Decisions
+                </div>
+                <div style="font-size:12px; color:{text_secondary}; line-height:1.65;">
+                    • Standardized School IDs, dates, text labels and boolean facility values.<br/>
+                    • Removed exact duplicate rows only; source records were otherwise retained for auditability.<br/>
+                    • Standardized MDM grain names and converted KG, grams and verified 50-kg bag units to kilograms.<br/>
+                    • Standardized test-score scales; Raw Marks and CGPA were converted to percentage where mathematically supported.<br/>
+                    • Letter Grade records remain without percentage conversion because the source does not provide a defensible grade-to-percentage mapping.<br/>
+                    • Missing MDM quantity/unit values were retained and explicitly flagged; no unsupported values were imputed.<br/>
+                    • Attendance records where present students exceeded total students were flagged as invalid and retained.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            f"""
+            <div class="exact-panel" style="margin-top:12px;">
+                <div style="font-size:14px; font-weight:700; color:{text_primary}; margin-bottom:8px;">
+                    Analytical Limitations
+                </div>
+                <div style="font-size:12px; color:{text_secondary}; line-height:1.65;">
+                    • Retention Risk Indicator is a composite analytical measure, not a measured dropout probability.<br/>
+                    • Electricity/test-score comparison is observational and does not establish causation.<br/>
+                    • Infrastructure summaries use the available inspection records; 2 schools have no infrastructure record.<br/>
+                    • The attendance reference-window flag is a working validation rule, not an authoritative academic calendar.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     # ── REPORTS & EXPORT DATA VIEW ──
     elif st.session_state["nav_page"] in ["📑 Reports & Export", "📥 Export Data"]:

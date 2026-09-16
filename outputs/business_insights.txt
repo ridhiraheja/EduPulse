@@ -1,0 +1,127 @@
+EDUPULSE - BUSINESS INSIGHTS REPORT
+======================================================================
+
+1. OVERALL OVERVIEW
+----------------------------------------------------------------------
+Schools analyzed: 600
+Total enrolled students: 148,083
+Average attendance: 81.66%
+Average test score: 67.26%
+Average facility count: 3.12 / 5
+Average retention risk indicator: 23.46
+
+Note: Retention Risk Indicator is an analytical measure based on attendance, attendance anomalies, academic performance and infrastructure conditions. It is not a measured dropout probability.
+
+2. ATTENDANCE ANOMALIES
+----------------------------------------------------------------------
+Average proxy attendance rate: 5.28%
+Average invalid attendance rate: 3.98%
+Total proxy attendance records: 1,068
+Total invalid attendance records: 806
+
+3. SCHOOLS WITH LOWEST ATTENDANCE
+----------------------------------------------------------------------
+school_id                          school_name  district  average_attendance_rate
+  SCH0321           Govt. Primary School Nayak Jalandhar                    74.70
+  SCH0476       Govt. Primary School Chowdhury Jalandhar                    74.78
+  SCH0571         Govt. Elementary School Gaba   Patiala                    75.16
+  SCH0161   Govt. Senior Secondary School Mand   Patiala                    75.26
+  SCH0066  Govt. Senior Secondary School Devan      Moga                    75.66
+  SCH0214       Govt. Elementary School Chahal  Bathinda                    75.73
+  SCH0183          Govt. Primary School Narain Jalandhar                    75.86
+  SCH0293          Govt. Primary School Wadhwa Jalandhar                    75.93
+  SCH0032 Govt. Senior Secondary School Narang  Bathinda                    76.13
+  SCH0228       Govt. Elementary School Sankar   Sangrur                    76.24
+
+4. SCHOOLS WITH HIGHEST PROXY ATTENDANCE
+----------------------------------------------------------------------
+school_id                        school_name  district  proxy_attendance_rate
+  SCH0488         Govt. Primary School Nayak  Bathinda                  20.59
+  SCH0546  Govt. Elementary School Prabhakar Jalandhar                  19.57
+  SCH0358    Govt. Elementary School Panchal  Ludhiana                  17.65
+  SCH0179      Govt. Elementary School Raman  Bathinda                  17.65
+  SCH0422         Govt. Primary School Rajan  Bathinda                  17.24
+  SCH0360 Govt. Senior Secondary School Bhat  Bathinda                  16.67
+  SCH0068        Govt. Primary School Mangat  Amritsar                  16.13
+  SCH0302           Govt. Middle School Sama  Amritsar                  15.62
+  SCH0210        Govt. Primary School Barman Ferozepur                  15.00
+  SCH0217          Govt. Primary School Apte   Patiala                  14.81
+
+5. SCHOOLS WITH LOWEST TEST SCORES
+----------------------------------------------------------------------
+school_id                                 school_name  district  average_test_score
+  SCH0497          Govt. Senior Secondary School Wali   Sangrur               45.03
+  SCH0007                    Govt. Middle School Kale Ferozepur               47.92
+  SCH0307                Govt. Elementary School Wali   Unknown               53.07
+  SCH0314                   Govt. Middle School Kakar   Patiala               54.56
+  SCH0310                Govt. Elementary School Nair   Sangrur               54.68
+  SCH0539        Govt. Senior Secondary School Kalita  Amritsar               54.80
+  SCH0406 Govt. Senior Secondary School Bhattacharyya   Sangrur               55.62
+  SCH0319                  Govt. Primary School Bassi  Ludhiana               55.69
+  SCH0322                    Govt. Primary School Tak      Moga               56.30
+  SCH0496                   Govt. Middle School Hayre  Amritsar               56.92
+
+6. HIGHEST RETENTION RISK INDICATORS
+----------------------------------------------------------------------
+school_id                             school_name  district  average_attendance_rate  average_test_score  average_facility_count  retention_risk_indicator
+  SCH0437     Govt. Senior Secondary School Loyal   Patiala                    81.01               64.59                    0.00                     39.53
+  SCH0333             Govt. Middle School Warrior  Amritsar                    79.48               61.20                    1.00                     35.51
+  SCH0021            Govt. Elementary School Sami   Sangrur                    81.52               61.27                    1.50                     34.08
+  SCH0494    Govt. Senior Secondary School Kurian  Amritsar                    81.43               64.69                    1.50                     33.24
+  SCH0370               Govt. Primary School Pant Jalandhar                    81.86               60.96                    1.75                     32.63
+  SCH0167            Govt. Elementary School Pall  Ludhiana                    82.54               67.99                    1.00                     32.37
+  SCH0126             Govt. Primary School Pillay   Sangrur                    78.91               63.65                    1.67                     31.92
+  SCH0378              Govt. Middle School Mitter  Amritsar                    80.15               58.99                    2.00                     30.80
+  SCH0551                Govt. Middle School Tara      Moga                    81.50               63.69                    2.00                     30.58
+  SCH0537 Govt. Senior Secondary School Jayaraman Ferozepur                    81.64               63.33                    2.00                     30.48
+
+7. ELECTRICITY VS TEST PERFORMANCE
+----------------------------------------------------------------------
+ electricity_status  schools  test_records  average_test_score
+   With electricity      405          4067               67.45
+Without electricity      136          1381               67.29
+
+Difference: 0.16 percentage points
+
+Interpretation: Schools with functional electricity had a slightly different average test score than schools without functional electricity. This comparison describes an association in the available data and does not establish causation.
+
+
+8. INFRASTRUCTURE COVERAGE
+----------------------------------------------------------------------
+Schools with infrastructure records: 598
+Schools without infrastructure records: 2
+Schools with all 5 facilities available in latest inspection: 58
+
+Electricity: 405/541 known (74.86%)
+Drinking Water: 462/529 known (87.33%)
+Functional Toilet: 436/537 known (81.19%)
+Boundary Wall: 324/523 known (61.95%)
+Playground: 260/526 known (49.43%)
+
+9. DISTRICT ANALYSIS
+----------------------------------------------------------------------
+           schools  average_attendance  average_test_score  average_facilities  average_risk
+district                                                                                    
+Sangrur         72               81.74               65.88                3.10         23.85
+Moga            71               81.62               67.24                3.07         23.76
+Amritsar        72               81.68               66.78                3.07         23.75
+Patiala         72               81.74               67.75                3.08         23.44
+Ludhiana        76               81.72               67.26                3.16         23.38
+Bathinda        74               81.59               67.36                3.16         23.26
+Jalandhar       62               81.14               68.24                3.13         23.23
+Unknown         22               81.72               67.34                3.19         23.18
+Ferozepur       79               81.91               67.67                3.18         23.09
+
+10. ATTENDANCE VS TEST PERFORMANCE
+----------------------------------------------------------------------
+Pearson correlation: -0.002
+
+Interpretation: The available school-level data shows essentially no linear relationship between average attendance and average test score.
+
+
+11. MID-DAY MEAL PROCUREMENT
+----------------------------------------------------------------------
+Procurement records: 12,000
+Total recorded grain quantity: 291,046.90 kg
+Total recorded MDM cost: Rs. 27,915,722.00
+Average paid percentage: 49.92%

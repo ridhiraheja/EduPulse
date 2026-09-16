@@ -1337,8 +1337,14 @@ def detect_intent(query_text):
     if any(w in q for w in ["relationship", "associated", "association", "correlated", "correlation", "with and without electricity", "infrastructure and test scores"]):
         return "CORRELATION"
 
-    # 5. Anomaly / High Risk / Low Performance Queries
-    if any(w in q for w in ["proxy attendance", "invalid attendance", "lowest attendance", "high retention risk", "lowest average facility", "top 10 schools by retention", "poor infrastructure"]):
+    # 5a. Infrastructure Ranking (facility count + ranking word) — must precede generic ANOMALY check
+    _infra_terms = ["facility count", "average facility", "facility", "infrastructure"]
+    _rank_words  = ["lowest", "highest", "top", "bottom", "rank", "most", "least"]
+    if any(it in q for it in _infra_terms) and any(rw in q for rw in _rank_words):
+        return "INFRA_RANKING"
+
+    # 5b. Anomaly / High Risk / Low Performance Queries
+    if any(w in q for w in ["proxy attendance", "invalid attendance", "lowest attendance", "high retention risk", "top 10 schools by retention", "poor infrastructure"]):
         return "ANOMALY"
 
     # 6. Mid-Day Meal Queries
@@ -1591,9 +1597,16 @@ def render_ai_result(query_text, intent, data):
             n_wat = int((data["drinking_water_available"] >= 100).sum())
             pct_wat = (n_wat / len(data) * 100)
             st.metric("Schools with Drinking Water", f"{n_wat} / {len(data)} ({pct_wat:.1f}%)")
-        elif "lowest average facility" in q:
-            low_infra = data.sort_values("average_facility_count", ascending=True).head(15)
-            st.dataframe(low_infra[["school_id", "school_name", "district", "average_facility_count", "retention_risk_indicator"]], use_container_width=True, hide_index=True)
+        elif any(w in q for w in ["facility count", "average facility", "facility"]) and any(r in q for r in ["lowest", "highest", "top", "bottom", "rank", "most", "least"]):
+            asc = any(w in q for w in ["lowest", "bottom", "least"])
+            label = "Lowest" if asc else "Highest"
+            ranked = data.sort_values("average_facility_count", ascending=asc).head(10)
+            st.dataframe(
+                ranked[["school_id", "school_name", "district", "average_facility_count", "average_attendance_rate", "retention_risk_indicator"]],
+                use_container_width=True,
+                hide_index=True
+            )
+            st.info(f"📊 Top 10 schools ranked by {label.lower()} average facility count.")
         else:
             infra_summary = pd.DataFrame({
                 "Facility": ["Electricity", "Drinking Water", "Functional Toilet", "Boundary Wall", "Playground"],

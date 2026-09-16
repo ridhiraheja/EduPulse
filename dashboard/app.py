@@ -642,6 +642,10 @@ with st.sidebar:
 # 6. TOP HEADER (FUNCTIONAL SEARCH, AI BUTTON)
 # ============================================================
 
+if st.session_state.get("pending_clear_search", False):
+    st.session_state["search_query"] = ""
+    st.session_state["pending_clear_search"] = False
+
 top_h1, top_h2 = st.columns([3.2, 2.8])
 
 with top_h1:
@@ -691,7 +695,7 @@ if search_query_clean:
     s_btn_c1, _ = st.columns([1.2, 5])
     with s_btn_c1:
         if st.button("✕ Clear Search Filter", key="btn_clear_search_top", use_container_width=True):
-            st.session_state["search_query"] = ""
+            st.session_state["pending_clear_search"] = True
             st.rerun()
 
     if len(search_matches) > 0:
@@ -1496,14 +1500,14 @@ def render_ai_result(query_text, intent, data):
         elif "infrastructure" in q:
             corr_df = data[["average_facility_count", "average_test_score"]].dropna()
             r = corr_df["average_facility_count"].corr(corr_df["average_test_score"])
-            fig = px.scatter(corr_df, x="average_facility_count", y="average_test_score", trendline="ols", labels={"average_facility_count": "Core Facilities (out of 5)", "average_test_score": "Average Test Score (%)"})
+            fig = px.scatter(corr_df, x="average_facility_count", y="average_test_score", labels={"average_facility_count": "Core Facilities (out of 5)", "average_test_score": "Average Test Score (%)"})
             fig.update_layout(make_layout(height=320))
             st.plotly_chart(fig, use_container_width=True)
             st.info(f"Association between core facilities and test scores: r = {r:.3f}. (Observational association, not causal impact).")
         else: # Attendance vs Test Scores
             corr_df = data[["average_attendance_rate", "average_test_score"]].dropna()
             r = corr_df["average_attendance_rate"].corr(corr_df["average_test_score"])
-            fig = px.scatter(corr_df, x="average_attendance_rate", y="average_test_score", trendline="ols", labels={"average_attendance_rate": "Average Attendance (%)", "average_test_score": "Average Test Score (%)"})
+            fig = px.scatter(corr_df, x="average_attendance_rate", y="average_test_score", labels={"average_attendance_rate": "Average Attendance (%)", "average_test_score": "Average Test Score (%)"})
             fig.update_layout(make_layout(height=320))
             st.plotly_chart(fig, use_container_width=True)
             st.info(f"Pearson correlation between attendance and test performance: r = {r:.3f}. (Observational association, not causal impact).")

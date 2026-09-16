@@ -1,4 +1,4 @@
-# 🎓 EduPulse | State Education Intelligence & Retention Platform
+# EduPulse | State Education Intelligence & Retention Platform
 
 EduPulse is an enterprise-grade education analytics, decision-support, and agentic AI platform built to analyze student attendance, academic performance, infrastructure readiness, and mid-day meal operations across government schools.
 
@@ -16,7 +16,7 @@ Government education departments collect vast volumes of administrative data acr
 
 ---
 
-## 🛡️ Data Rescue & Pipeline Summary
+##  Data Rescue & Pipeline Summary
 
 The EduPulse Data Rescue engine successfully ingested, cleaned, and integrated 5 raw datasets:
 
@@ -38,7 +38,7 @@ The EduPulse Data Rescue engine successfully ingested, cleaned, and integrated 5
 
 ---
 
-## 📐 Retention Risk Indicator Methodology
+##  Retention Risk Indicator Methodology
 
 The **Retention Risk Indicator** is a composite analytical prioritization metric (0–100) computed as the arithmetic mean of four 0–100 component risk scores:
 
@@ -54,7 +54,7 @@ Where:
 
 ---
 
-## 🤖 Ask EduPulse AI — Modular Agentic Natural Language Engine
+##  Ask EduPulse AI — Modular Agentic Natural Language Engine
 
 The **Ask EduPulse AI** engine converts freeform natural language questions into data analyses using a modular reasoning pipeline:
 
@@ -71,7 +71,7 @@ Query Input → Intent Detection → Dataset & Column Selection → Dynamic Visu
 
 ---
 
-## 🔮 Policy Impact Simulator
+##  Policy Impact Simulator
 
 The Policy Impact Simulator empowers education planners to simulate target interventions:
 - **Sliders**: Attendance Boost (+%), Remedial Academic Support (+%), Infrastructure Upgrade (+Facilities), Proxy Anomaly Reduction (-%).
@@ -80,7 +80,7 @@ The Policy Impact Simulator empowers education planners to simulate target inter
 
 ---
 
-## 🚀 Installation & Local Execution
+##  Installation & Local Execution
 
 ### Prerequisites
 - Python 3.10+
@@ -119,7 +119,7 @@ The Policy Impact Simulator empowers education planners to simulate target inter
 
 ---
 
-## 📁 Repository Structure
+##  Repository Structure
 
 ```text
 EduPulse/
@@ -157,3 +157,6 @@ EduPulse/
 - **No Measured Dropout Label**: Source datasets do not include explicit dropout event labels; the *Retention Risk Indicator* is an analytical prioritization index.
 - **Observational Data**: Statistical comparisons (e.g. electricity availability vs test scores) show association, not direct causation.
 - **Infrastructure Inspections**: Infrastructure facility status represents the average facility availability rate across inspection records per school.
+
+- Deployed App link : https://edupulse-ai-tracker.streamlit.app/
+- Demo Video link : https://drive.google.com/file/d/10q2-vncuTojwN_XVIP4b4fveG5gfdNHs/view?usp=drive_link

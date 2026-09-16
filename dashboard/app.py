@@ -1655,32 +1655,9 @@ def show_ai_modal():
         unsafe_allow_html=True
     )
 
-    ai_q = st.text_area(
-        "Ask anything",
-        value=st.session_state.get("ai_modal_text", ""),
-        placeholder="Ask anything... e.g. Show attendance trend, Compare electricity and test scores, Rank districts by risk, etc.",
-        height=100,
-        label_visibility="collapsed",
-        key="ai_modal_text"
-    )
-
-    send_col, close_col = st.columns([4.2, 1.2])
-
-    with send_col:
-        st.markdown('<div class="ai-modal-send">', unsafe_allow_html=True)
-        send_clicked = st.button("✦ Analyze with EduPulse AI", key="ai_modal_send", use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with close_col:
-        close_clicked = st.button("✕ Close", key="ai_modal_close", use_container_width=True)
-
-    if close_clicked:
-        st.session_state["show_ai_agent"] = False
-        st.rerun()
-
     st.markdown(
         """
-        <div style="font-size:12px; font-weight:700; color:#94a3b8; margin:16px 0 10px;">
+        <div style="font-size:12px; font-weight:700; color:#94a3b8; margin:6px 0 10px;">
             Try these examples:
         </div>
         """,
@@ -1707,6 +1684,31 @@ def show_ai_modal():
                 st.session_state["ai_modal_text"] = full_prompt
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+
+    ai_q = st.text_area(
+        "Ask anything",
+        value=st.session_state.get("ai_modal_text", ""),
+        placeholder="Ask anything... e.g. Show attendance trend, Compare electricity and test scores, Rank districts by risk, etc.",
+        height=90,
+        label_visibility="collapsed",
+        key="ai_modal_text"
+    )
+
+    send_col, close_col = st.columns([4.2, 1.2])
+
+    with send_col:
+        st.markdown('<div class="ai-modal-send">', unsafe_allow_html=True)
+        send_clicked = st.button("✦ Analyze with EduPulse AI", key="ai_modal_send", use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with close_col:
+        close_clicked = st.button("✕ Close", key="ai_modal_close", use_container_width=True)
+
+    if close_clicked:
+        st.session_state["show_ai_agent"] = False
+        st.rerun()
 
     query = st.session_state.get("ai_modal_text", "").strip()
 

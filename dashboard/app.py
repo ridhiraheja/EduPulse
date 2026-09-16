@@ -1377,28 +1377,34 @@ def render_ai_result(query_text, intent, data):
                 """,
                 unsafe_allow_html=True
             )
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Attendance Rate", f"{s_row['average_attendance_rate']:.1f}%")
-            m2.metric("Average Test Score", f"{s_row['average_test_score']:.1f}%")
-            m3.metric("Facility Count", f"{s_row['average_facility_count']:.1f} / 5")
-            m4.metric("Retention Risk Index", f"{s_row['retention_risk_indicator']:.2f}")
 
-            # Facility status list
-            f_elec = "✅ Yes" if s_row['electricity_available'] >= 100 else "❌ No"
-            f_wat = "✅ Yes" if s_row['drinking_water_available'] >= 100 else "❌ No"
-            f_toi = "✅ Yes" if s_row['functional_toilet_available'] >= 100 else "❌ No"
-            f_play = "✅ Yes" if s_row['playground_available'] >= 100 else "❌ No"
-            f_wall = "✅ Yes" if s_row['boundary_wall_available'] >= 100 else "❌ No"
+            # If user specifically asks for retention risk only
+            if "retention risk" in q or "risk of" in q:
+                st.metric(f"Retention Risk Indicator ({s_row['school_id']})", f"{s_row['retention_risk_indicator']:.2f}")
+                st.info(f"Composite Retention Risk for {s_row['school_name']} based on attendance ({s_row['average_attendance_rate']:.1f}%), academic score ({s_row['average_test_score']:.1f}%), and infrastructure ({s_row['average_facility_count']:.1f}/5).")
+            else:
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Attendance Rate", f"{s_row['average_attendance_rate']:.1f}%")
+                m2.metric("Average Test Score", f"{s_row['average_test_score']:.1f}%")
+                m3.metric("Facility Count", f"{s_row['average_facility_count']:.1f} / 5")
+                m4.metric("Retention Risk Index", f"{s_row['retention_risk_indicator']:.2f}")
 
-            st.markdown(
-                f"""
-                <div style="font-size:12px; color:#cbd5e1; line-height: 1.6; margin-top:8px;">
-                    ⚡ <b>Electricity:</b> {f_elec} &nbsp;|&nbsp; 💧 <b>Drinking Water:</b> {f_wat} &nbsp;|&nbsp; 🚽 <b>Functional Toilet:</b> {f_toi}<br/>
-                    ⚽ <b>Playground:</b> {f_play} &nbsp;|&nbsp; 🧱 <b>Boundary Wall:</b> {f_wall}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+                # Facility status list
+                f_elec = "✅ Yes" if s_row['electricity_available'] >= 100 else "❌ No"
+                f_wat = "✅ Yes" if s_row['drinking_water_available'] >= 100 else "❌ No"
+                f_toi = "✅ Yes" if s_row['functional_toilet_available'] >= 100 else "❌ No"
+                f_play = "✅ Yes" if s_row['playground_available'] >= 100 else "❌ No"
+                f_wall = "✅ Yes" if s_row['boundary_wall_available'] >= 100 else "❌ No"
+
+                st.markdown(
+                    f"""
+                    <div style="font-size:12px; color:#cbd5e1; line-height: 1.6; margin-top:8px;">
+                        ⚡ <b>Electricity:</b> {f_elec} &nbsp;|&nbsp; 💧 <b>Drinking Water:</b> {f_wat} &nbsp;|&nbsp; 🚽 <b>Functional Toilet:</b> {f_toi}<br/>
+                        ⚽ <b>Playground:</b> {f_play} &nbsp;|&nbsp; 🧱 <b>Boundary Wall:</b> {f_wall}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
         else:
             st.info(f"School ID '{target_sch_id}' not found in current scope.")
         return
@@ -1526,10 +1532,11 @@ def render_ai_result(query_text, intent, data):
         elif "lowest attendance" in q:
             anom = data.sort_values("average_attendance_rate", ascending=True)
             st.dataframe(anom[["school_id", "school_name", "district", "average_attendance_rate", "retention_risk_indicator"]].head(15), use_container_width=True, hide_index=True)
-        elif "poor infrastructure and low attendance" in q or "facility" in q:
-            anom = data[(data["average_facility_count"] <= 2.0) & (data["average_attendance_rate"] < 75)].sort_values("retention_risk_indicator", ascending=False)
+        elif "poor infrastructure and low attendance" in q or ("facility" in q and "lowest" in q):
+            # Sort schools with lowest core facility count
+            anom = data.sort_values("average_facility_count", ascending=True).head(25)
             st.dataframe(anom[["school_id", "school_name", "district", "average_facility_count", "average_attendance_rate", "retention_risk_indicator"]], use_container_width=True, hide_index=True)
-            st.warning(f"⚠️ {len(anom)} priority schools identified with ≤2 core facilities and <75% attendance.")
+            st.warning(f"⚠️ Showing top {len(anom)} schools sorted by lowest average core facility count.")
         else: # High risk / Top 10 retention risk
             top_risk = data.sort_values("retention_risk_indicator", ascending=False).head(10)
             st.dataframe(top_risk[["school_id", "school_name", "district", "retention_risk_indicator", "average_attendance_rate", "average_test_score"]], use_container_width=True, hide_index=True)
@@ -1538,7 +1545,11 @@ def render_ai_result(query_text, intent, data):
 
     # ── 6. MID-DAY MEAL QUERIES ──
     if intent == "MDM":
-        if "grain type" in q or "grain" in q:
+        if "pending" in q:
+            pending_sch = data[data["pending_records"] > 0].sort_values("pending_records", ascending=False)
+            st.dataframe(pending_sch[["school_id", "school_name", "district", "pending_records", "due_records", "paid_records"]].head(25), use_container_width=True, hide_index=True)
+            st.warning(f"⚠️ {len(pending_sch)} schools have pending MDM procurement payment records.")
+        elif "grain type" in q or "grain" in q:
             mdm_sub = df_mdm[df_mdm["school_id"].isin(set(data["school_id"]))].dropna(subset=["grain_type", "quantity_kg"])
             g_agg = mdm_sub.groupby("grain_type", as_index=False)["quantity_kg"].sum().sort_values("quantity_kg", ascending=False)
             fig = px.bar(g_agg, x="grain_type", y="quantity_kg", text_auto=".1f", labels={"grain_type": "Grain Type", "quantity_kg": "Total Quantity (kg)"})
@@ -1551,7 +1562,7 @@ def render_ai_result(query_text, intent, data):
             fig.update_traces(marker_color="#f59e0b")
             fig.update_layout(make_layout(height=320, showlegend=False))
             st.plotly_chart(fig, use_container_width=True)
-        elif "percentage" in q or "pending" in q or "paid" in q:
+        elif "percentage" in q or "paid" in q:
             paid_sum = data["paid_records"].sum()
             pending_sum = data["pending_records"].sum()
             due_sum = data["due_records"].sum()
